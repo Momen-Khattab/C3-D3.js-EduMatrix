@@ -1,0 +1,42 @@
+body, h1, html {
+    font-family: "Raleway", sans-serif;
+    height: 100%;
+}
+
+.bgimg {
+    background-image: url('/static/images/img3.jpg');
+    min-height: 100%;
+    background-position: center;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+}
+
+
+
+.logo {
+    background-image: url('/static/images/EduMatrix.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 200px;
+    height: 100px;
+}
+
+
+/*for the buttons */
+.w3-button {
+    font-size: 20px;
+    padding: 15px 30px;
+    color: rgb(222, 218, 218);
+    background-color: #4CAF50;
+    border: none;
+    border-radius: 8px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+/* Hover effect */
+.w3-button:hover {
+    transform: scale(1.7);
+}

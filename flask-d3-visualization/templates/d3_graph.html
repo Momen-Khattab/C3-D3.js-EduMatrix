@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Radial Bar Chart</title>
+
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3-scale-radial.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="my_dataviz" ></div>
+    <div class="tooltip"></div>
+
+    <script>
+        // Set the dimensions and margins of the graph
+        var margin = { top: 100, right: 100, bottom: 100, left: 100 },
+            width = 1000 - margin.left - margin.right,
+            height = 1200 - margin.top - margin.bottom,
+            innerRadius = 200,
+            outerRadius = Math.min(width, height) / 2;
+
+        // Append the SVG object
+        var svg = d3.select("#my_dataviz")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${width / 2 + margin.left}, ${height / 2 + margin.top})`);
+
+        // Tooltip setup
+        const tooltip = d3.select(".tooltip");
+
+        // Load your dataset
+        const csvPath = "static/worldometer_data.csv";
+
+        d3.csv(csvPath, function (data) {
+            // Convert columns to numeric
+            data.forEach(d => {
+                d.TotalCases = +d.TotalCases;
+            });
+
+            // Sort countries by TotalCases descending and take the top 50
+            const top50 = data.sort((a, b) => b.TotalCases - a.TotalCases).slice(0, 50);
+
+            // X scale: for the radial axis (countries)
+            var x = d3.scaleBand()
+                .range([0, 2 * Math.PI]) // Full circle
+                .domain(top50.map(d => d["Country/Region"])); // Country names
+
+            // Y scale: radial scale for bar heights
+            var y = d3.scaleRadial()
+                .range([innerRadius, outerRadius])
+                .domain([0, d3.max(top50, d => d.TotalCases)]);
+
+            // Color scale
+            var color = d3.scaleOrdinal()
+                .domain(top50.map(d => d["Country/Region"]))
+                .range(d3.schemeCategory10);
+
+            // Add bars
+            svg.append("g")
+                .selectAll("path")
+                .data(top50)
+                .enter()
+                .append("path")
+                .attr("fill", d => color(d["Country/Region"]))
+                .attr("d", d3.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(d => y(d.TotalCases))
+                    .startAngle(d => x(d["Country/Region"]))
+                    .endAngle(d => x(d["Country/Region"]) + x.bandwidth())
+                    .padAngle(0.01)
+                    .padRadius(innerRadius))
+                .on("mouseover", function (event, d) {
+                    tooltip
+                        .style("opacity", 1)
+                        .html(`
+                            <strong>${d["Country/Region"]}</strong><br>
+                            Total Cases: ${d.TotalCases.toLocaleString()}
+                        `)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 20) + "px");
+                })
+                .on("mousemove", function (event) {
+                    tooltip
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 20) + "px");
+                })
+                .on("mouseout", function () {
+                    tooltip.style("opacity", 0);
+                });
+
+            // Add the labels with country names and total cases
+            svg.append("g")
+                .selectAll("g")
+                .data(top50)
+                .enter()
+                .append("g")
+                .attr("text-anchor", function (d) {
+                    return (x(d["Country/Region"]) + x.bandwidth() / 2 + Math.PI) % (2 * Math.PI) < Math.PI ? "end" : "start";
+                })
+                .attr("transform", function (d) {
+                    return "rotate(" + ((x(d["Country/Region"]) + x.bandwidth() / 2) * 180 / Math.PI - 90) + ")" +
+                        "translate(" + (y(d.TotalCases) + 30) + ",0)";
+                })
+                .append("text")
+                .text(d => `${d["Country/Region"]} (${d.TotalCases.toLocaleString()})`)
+                .attr("transform", function (d) {
+                    return (x(d["Country/Region"]) + x.bandwidth() / 2 + Math.PI) % (2 * Math.PI) < Math.PI ? "rotate(180)" : "rotate(0)";
+                })
+                .style("font-size", "12px")
+                .attr("alignment-baseline", "middle");
+
+        });
+    </script>
+</body>
+</html>
